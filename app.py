@@ -7,16 +7,33 @@ from urllib.parse import urlparse
 app = Flask(__name__)
 CORS(app) 
 
-# --- KONFIGURASI DATABASE (SUDAH DIMIGRASI KE CLOUD AIVEN) ---
-db_config = {
-    "host": "mysql-f0fb579-warunggelap.a.aivencloud.com",
-    "user": "avnadmin",
-    "password": "AVNS_a5l9XjufF6hO563UcRe", # <-- JANGAN LUPA: Ganti dengan password asli hasil klik ikon MATA di web Aiven
-    "database": "defaultdb",
-    "port": 13745,
-    "ssl": {'ssl': {}}, # <-- Wajib ditambah agar koneksi ke cloud Aiven aman dan tidak ditolak
-    "cursorclass": pymysql.cursors.DictCursor # Otomatis menjadi dictionary
-}
+# --- KONFIGURASI DATABASE (FLEKSIBEL & AMAN DARI SENSOR GITHUB) ---
+db_url = os.environ.get("DATABASE_URL")
+
+if db_url:
+    # JIKA BERJALAN DI SERVER CLOUD (VERCEL)
+    url = urlparse(db_url)
+    db_config = {
+        "host": url.hostname,
+        "user": url.username,
+        "password": url.password,
+        "database": url.path[1:], 
+        "port": url.port or 3306,
+        "ssl": {'ssl': {}}, # Wajib untuk cloud database Aiven
+        "cursorclass": pymysql.cursors.DictCursor
+    }
+else:
+    # JIKA BERJALAN DI LAPTOP (LOKAL)
+    # Ubah password di bawah ini saat running lokal, lalu kembalikan menjadi "PASSWORD_DIAMANKAN" sebelum git push
+    db_config = {
+        "host": "mysql-f0fb579-warunggelap.a.aivencloud.com",
+        "user": "avnadmin",
+        "password": "PASSWORD_DIAMANKAN", 
+        "database": "defaultdb",
+        "port": 13745,
+        "ssl": {'ssl': {}},
+        "cursorclass": pymysql.cursors.DictCursor
+    }
 
 # Data Menu Lengkap dengan Gambar (Tetap seperti aslinya)
 MENU = {
