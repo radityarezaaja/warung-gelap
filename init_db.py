@@ -4,7 +4,7 @@ import pymysql
 db_config = {
     "host": "mysql-f0fb579-warunggelap.a.aivencloud.com",
     "user": "avnadmin",
-    "password": "AVNS_a5l9XjufF6hO563UcRe", # <-- GANTI PAKE PASSWORD AIVEN LO!
+    "password": "AVNS_zBSkHwPh5HwgJipez9a", # <-- GANTI PAKE PASSWORD AIVEN LO!
     "database": "defaultdb",
     "port": 13745,
     "ssl": {'ssl': {}}

@@ -467,7 +467,7 @@
                 items: cart 
             };
 
-            fetch('http://127.0.0.1:5000/simpan_pesanan', {
+            fetch('/simpan_pesanan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataPesanan)
