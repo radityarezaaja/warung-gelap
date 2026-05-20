@@ -7,29 +7,16 @@ from urllib.parse import urlparse
 app = Flask(__name__)
 CORS(app) 
 
-# --- KONFIGURASI DATABASE (FLEKSIBEL: LOKAL & CLOUD) ---
-db_url = os.environ.get("DATABASE_URL")
-
-if db_url:
-    # JIKA BERJALAN DI CLOUD (RENDER)
-    url = urlparse(db_url)
-    db_config = {
-        "host": url.hostname,
-        "user": url.username,
-        "password": url.password,
-        "database": url.path[1:],  # Membuang tanda '/' di depan nama database
-        "port": url.port or 3306,
-        "cursorclass": pymysql.cursors.DictCursor
-    }
-else:
-    # JIKA BERJALAN DI LAPTOP (LOKAL XAMPP)
-    db_config = {
-        "host": "localhost",
-        "user": "root",
-        "password": "", 
-        "database": "warung_gelap",
-        "cursorclass": pymysql.cursors.DictCursor # Otomatis menjadi dictionary
-    }
+# --- KONFIGURASI DATABASE (SUDAH DIMIGRASI KE CLOUD AIVEN) ---
+db_config = {
+    "host": "mysql-f0fb579-warunggelap.a.aivencloud.com",
+    "user": "avnadmin",
+    "password": "MASUKKAN_PASSWORD_AIVEN_LO_DI_SINI", # <-- JANGAN LUPA: Ganti dengan password asli hasil klik ikon MATA di web Aiven
+    "database": "defaultdb",
+    "port": 13745,
+    "ssl": {'ssl': {}}, # <-- Wajib ditambah agar koneksi ke cloud Aiven aman dan tidak ditolak
+    "cursorclass": pymysql.cursors.DictCursor # Otomatis menjadi dictionary
+}
 
 # Data Menu Lengkap dengan Gambar (Tetap seperti aslinya)
 MENU = {
@@ -43,7 +30,7 @@ MENU = {
     "minuman": [
         ("ES TEH MANIS!", 5000, "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6q9hUpKk7FgChm014QYy1sKdZKkZK5OUruQ&s"),
         ("Kopi Hitam", 7000, "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYFuobkc99W3vA1AYRa4jE2wVwfv1asXGktQ&s"),
-        ("Susu Aja", 10000, "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-v0M9N9X_7zX3G0P0q8zZ7n8W0-9-5-6-7-8&s"),
+        ("Susu Aja", 10000, "https://encrypted-tbn0.gstatic.com/images?q=tbn:GcS-v0M9N9X_7zX3G0P0q8zZ7n8W0-9-5-6-7-8&s"),
         ("Soda Gak Gembira", 12000, "https://i.pinimg.com/474x/d6/5d/78/d65d78d36414874347513455c3ef3d92.jpg"),
         ("Air Mineral", 4000, "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQeqxYo4dh8O-j-NJSVLs-aHmOyqFc26JWtUA&s")
     ],
@@ -400,7 +387,7 @@ def admin():
         return f"Gagal memuat database: {str(e)}"
 
 if __name__ == '__main__':
-    # Otomatis menyesuaikan port dinamis dari Render
+    # Otomatis menyesuaikan port dinamis dari Render/Vercel
     port = int(os.environ.get("PORT", 5000))
     # debug di-set False saat naik server, di lokal tetap aman karena mengikuti environment
     app.run(host='0.0.0.0', port=port, debug=os.environ.get("FLASK_ENV") == "development")
