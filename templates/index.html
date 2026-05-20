@@ -457,7 +457,12 @@
             const disc = subtotal > 75000 ? subtotal * 0.1 : 0;
             const total = subtotal - disc;
 
-            // --- PENGIRIMAN KE FLASK (DITAMBAHKAN) ---
+            // --- PROTEKSI DOUBLE CLICK (MENGUNCI TOMBOL) ---
+            const btnKonfirmasi = document.getElementById('btn-konfirmasi');
+            btnKonfirmasi.disabled = true;
+            btnKonfirmasi.innerText = "MEMPROSES...";
+
+            // --- PENGIRIMAN KE FLASK ---
             const dataPesanan = {
                 nama: name,
                 meja: table,
@@ -493,11 +498,17 @@
                     document.getElementById('modal-struk').style.display = 'flex';
                 } else {
                     alert("Gagal menyimpan ke database: " + res.message);
+                    // Buka kuncian jika server menolak transaksi
+                    btnKonfirmasi.disabled = false;
+                    btnKonfirmasi.innerText = "KONFIRMASI BAYAR";
                 }
             })
             .catch(err => {
                 console.error(err);
                 alert("Gagal terhubung ke server Flask. Pastikan app.py sudah berjalan!");
+                // Buka kuncian jika terjadi gangguan koneksi jaringan
+                btnKonfirmasi.disabled = false;
+                btnKonfirmasi.innerText = "KONFIRMASI BAYAR";
             });
         }
     </script>
