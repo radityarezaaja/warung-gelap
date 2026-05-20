@@ -11,7 +11,7 @@ CORS(app)
 db_config = {
     "host": "mysql-f0fb579-warunggelap.a.aivencloud.com",
     "user": "avnadmin",
-    "password": "MASUKKAN_PASSWORD_AIVEN_LO_DI_SINI", # <-- JANGAN LUPA: Ganti dengan password asli hasil klik ikon MATA di web Aiven
+    "password": "AVNS_a5l9XjufF6hO563UcRe", # <-- JANGAN LUPA: Ganti dengan password asli hasil klik ikon MATA di web Aiven
     "database": "defaultdb",
     "port": 13745,
     "ssl": {'ssl': {}}, # <-- Wajib ditambah agar koneksi ke cloud Aiven aman dan tidak ditolak
