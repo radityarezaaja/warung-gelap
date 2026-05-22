@@ -157,6 +157,23 @@
             background: rgba(17, 17, 17, 0.9); 
             padding: 30px; border-radius: 25px; border: 1px solid #333; 
             backdrop-filter: blur(10px);
+            
+        }
+        
+        .menu-layout{
+            display:flex;
+            gap:30px;
+            align-items:flex-start;
+        }
+        
+        .menu-content{
+            flex:3;
+        }
+        
+        .floating-cart{
+            flex:1;
+            position:sticky;
+            top:20px;
         }
 
         .cart-item { display: flex; align-items: center; gap: 15px; padding: 15px 0; border-bottom: 1px solid #222; }
@@ -245,27 +262,80 @@
         </div>
 
         <div id="tab-pesan" class="tab-content">
-            <div class="search-container">
-                <input type="text" id="search-input" placeholder="Cari menu favoritmu..." onkeyup="filterMenu()">
-            </div>
 
-            {% for cat, items in menu.items() %}
-            <div class="category-group">
-                <h2 class="category-title">{{ cat }}</h2>
-                <div class="menu-grid">
-                    {% for nama, harga, img in items %}
-                    <div class="menu-card" data-name="{{ nama.lower() }}">
-                        {% if loop.index == 1 %}<div class="best-seller-badge">BEST</div>{% endif %}
-                        <img src="{{ img }}" class="menu-img" alt="{{ nama }}">
-                        <h3>{{ nama }}</h3>
-                        <p class="price">Rp {{ "{:,}".format(harga) }}</p>
-                        <button class="btn-add" onclick="addToCart('{{ nama }}', {{ harga }}, '{{ img }}')">Tambah ke Keranjang</button>
+            <div class="menu-layout">
+        
+                <!-- BAGIAN MENU -->
+                <div class="menu-content">
+        
+                    <div class="search-container">
+                        <input type="text" id="search-input"
+                            placeholder="Cari menu favoritmu..."
+                            onkeyup="filterMenu()">
+                    </div>
+        
+                    {% for cat, items in menu.items() %}
+                    <div class="category-group">
+                        <h2 class="category-title">{{ cat }}</h2>
+        
+                        <div class="menu-grid">
+                            {% for nama, harga, img in items %}
+                            <div class="menu-card" data-name="{{ nama.lower() }}">
+                                
+                                {% if loop.index == 1 %}
+                                <div class="best-seller-badge">BEST</div>
+                                {% endif %}
+        
+                                <img src="{{ img }}" class="menu-img" alt="{{ nama }}">
+        
+                                <h3>{{ nama }}</h3>
+        
+                                <p class="price">
+                                    Rp {{ "{:,}".format(harga) }}
+                                </p>
+        
+                                <button class="btn-add"
+                                    onclick="addToCart('{{ nama }}', {{ harga }} , '{{ img }}')">
+                                    Tambah ke Keranjang
+                                </button>
+        
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endfor %}
+        
                 </div>
+        
+                <!-- FLOATING CART -->
+                <div class="checkout-section floating-cart">
+        
+                    <h2 style="color: var(--primary); margin-bottom:20px;">
+                        Daftar Pesanan
+                    </h2>
+        
+                    <div id="preview-cart">
+                        <p style="color:#777; text-align:center;">
+                            Belum ada pesanan...
+                        </p>
+                    </div>
+        
+                </div>
+        
             </div>
-            {% endfor %}
-            <button class="btn-add" style="margin-top: 40px; padding: 20px; background: var(--accent); color: #000; font-size: 1.1rem;" onclick="showTab('bayar')">LANJUT KE PEMBAYARAN →</button>
+        
+            <button class="btn-add"
+                style="margin-top:40px;
+                padding:20px;
+                background:var(--accent);
+                color:#000;
+                font-size:1.1rem;"
+                onclick="showTab('bayar')">
+        
+                LANJUT KE PEMBAYARAN →
+        
+            </button>
+        
         </div>
 
         <div id="tab-bayar" class="tab-content" style="display: none;">
@@ -403,32 +473,67 @@
         function updateUI() {
             const list = document.getElementById('cart-list');
             const etaBox = document.getElementById('eta-container');
+            const previewCart = document.getElementById('preview-cart');
 
             if (cart.length === 0) {
-                list.innerHTML = '<p style="color: #555; text-align: center;">Belum ada pesanan...</p>';
-                etaBox.innerHTML = '';
+
+                const emptyHTML = `
+                    <p style="color:#777; text-align:center;">
+                        Belum ada pesanan...
+                    </p>
+                `;
+
+                list.innerHTML = emptyHTML;
+                previewCart.innerHTML = emptyHTML;
+                etaBox.innerHTML = "";
+
             } else {
-                list.innerHTML = cart.map((i, idx) => `
-                    <div class="cart-item" style="animation: fadeInUp 0.3s ease;">
-                        <img src="${i.img}" style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover;">
-                        <div style="flex-grow: 1;">
-                            <span style="display: block; font-weight: 600;">${i.name}</span>
-                            <span style="font-size: 0.85rem; color: var(--accent);">Rp ${i.price.toLocaleString('id-ID')}</span>
+
+                const cartHTML = cart.map((i, idx) => `
+                    <div class="cart-item">
+                        <img src="${i.img}" 
+                            style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
+
+                        <div style="flex-grow:1;">
+                            <span style="display:block; font-weight:600;">
+                                ${i.name}
+                            </span>
+
+                            <span style="color:var(--accent); font-size:0.9rem;">
+                                Rp ${i.price.toLocaleString('id-ID')}
+                            </span>
                         </div>
-                        <button onclick="removeItem(${idx})" style="background:none; border:none; color:#e74c3c; cursor:pointer;">Hapus</button>
+
+                        <button onclick="removeItem(${idx})"
+                            style="background:none; border:none; color:#e74c3c; cursor:pointer;">
+                            Hapus
+                        </button>
                     </div>
                 `).join('');
 
+                list.innerHTML = cartHTML;
+                previewCart.innerHTML = cartHTML;
+
                 const minutes = cart.length * 5;
-                etaBox.innerHTML = `<div class="eta-badge">⏳ Pesanan siap dalam ± <strong>${minutes} Menit</strong></div>`;
+
+                etaBox.innerHTML = `
+                    <div class="eta-badge">
+                        ⏳ Pesanan siap dalam ± <strong>${minutes} Menit</strong>
+                    </div>
+                `;
             }
-            
+
             const disc = subtotal > 75000 ? subtotal * 0.1 : 0;
             const total = subtotal - disc;
 
-            document.getElementById('subtotal').innerText = `Rp ${subtotal.toLocaleString('id-ID')}`;
-            document.getElementById('diskon').innerText = `- Rp ${disc.toLocaleString('id-ID')}`;
-            document.getElementById('total-akhir').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+            document.getElementById('subtotal').innerText =
+                `Rp ${subtotal.toLocaleString('id-ID')}`;
+
+            document.getElementById('diskon').innerText =
+                `- Rp ${disc.toLocaleString('id-ID')}`;
+
+            document.getElementById('total-akhir').innerText =
+                `Rp ${total.toLocaleString('id-ID')}`;
         }
 
         function removeItem(index) {
