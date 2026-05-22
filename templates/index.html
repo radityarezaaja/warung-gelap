@@ -246,6 +246,65 @@
 
         #qris-display { text-align: center; margin: 15px 0; display: none; background: white; padding: 15px; border-radius: 15px; animation: fadeInUp 0.3s ease; }
         #total-akhir { color: var(--accent); font-weight: 800; font-size: 2.5rem; }
+
+        /* FLOATING CART */
+        #floating-cart-btn{
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            font-size:22px;
+            cursor:pointer;
+            z-index:999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        /* ANGKA CART */
+        #cart-count{
+            position:absolute;
+            top:-5px;
+            right:-5px;
+            background:red;
+            width:24px;
+            height:24px;
+            border-radius:50%;
+            font-size:12px;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            font-weight:bold;
+        }
+
+        /* POPUP */
+        #cart-popup{
+            position: fixed;
+            top:0;
+            right:-100%;
+            width:350px;
+            max-width:100%;
+            height:100%;
+            background:#111;
+            z-index:1000;
+            transition:0.4s;
+            box-shadow:-10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        #cart-popup.active{
+            right:0;
+        }
+
+        .cart-popup-content{
+            padding:25px;
+            overflow-y:auto;
+            height:100%;
+        }
     </style>
 </head>
 <body>
@@ -306,21 +365,7 @@
                     {% endfor %}
         
                 </div>
-        
-                <!-- FLOATING CART -->
-                <div class="checkout-section floating-cart">
-        
-                    <h2 style="color: var(--primary); margin-bottom:20px;">
-                        Daftar Pesanan
-                    </h2>
-        
-                    <div id="preview-cart">
-                        <p style="color:#777; text-align:center;">
-                            Belum ada pesanan...
-                        </p>
-                    </div>
-        
-                </div>
+
         
             </div>
         
@@ -470,10 +515,17 @@
             }, 1000);
         }
 
+        function toggleCart(){
+            document
+                .getElementById('cart-popup')
+                .classList.toggle('active');
+        }
+
         function updateUI() {
             const list = document.getElementById('cart-list');
             const etaBox = document.getElementById('eta-container');
             const previewCart = document.getElementById('preview-cart');
+            document.getElementById('cart-count').innerText = cart.length;
 
             if (cart.length === 0) {
 
@@ -617,5 +669,37 @@
             });
         }
     </script>
+    <!-- FLOATING CART BUTTON -->
+    <div id="floating-cart-btn" onclick="toggleCart()">
+        🛒 <span id="cart-count">0</span>
+    </div>
+
+    <!-- POPUP CART -->
+    <div id="cart-popup">
+        <div class="cart-popup-content">
+
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="color:var(--primary);">Keranjang</h2>
+
+                <button onclick="toggleCart()" 
+                    style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">
+                    ✕
+                </button>
+            </div>
+
+            <div id="preview-cart">
+                <p style="color:#777; text-align:center;">
+                    Belum ada pesanan...
+                </p>
+            </div>
+
+            <button class="btn-add"
+                style="margin-top:20px;"
+                onclick="showTab('bayar'); toggleCart();">
+                LANJUT BAYAR
+            </button>
+
+        </div>
+    </div>
 </body>
 </html>
