@@ -65,7 +65,7 @@ MENU = {
     ]
 }
 
-# --- TEMPLATE HTML UNTUK ADMIN (Ditambah Tombol Hapus Pesanan) ---
+# --- TEMPLATE HTML UNTUK ADMIN (Mendukung Penghapusan Instan Asinkronus) ---
 ADMIN_HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -152,6 +152,8 @@ ADMIN_HTML_TEMPLATE = """
             text-decoration: none;
             font-weight: bold;
             display: inline-block;
+            border: none;
+            cursor: pointer;
         }
 
         .btn-masak {
@@ -195,7 +197,7 @@ ADMIN_HTML_TEMPLATE = """
         </tr>
 
         {% for o in orders %}
-        <tr>
+        <tr id="row-{{ o.id }}">
             <td>{{ o.waktu_pesan }}</td>
             <td>{{ o.no_meja }}</td>
             <td>{{ o.nama_pelanggan }}</td>
@@ -209,10 +211,8 @@ ADMIN_HTML_TEMPLATE = """
             <td>
                 {% if o.status == 'Antri' %}
                     <span class="status antri">ANTRI</span>
-
                 {% elif o.status == 'Dimasak' %}
                     <span class="status dimasak">DIMASAK</span>
-
                 {% else %}
                     <span class="status selesai">SELESAI</span>
                 {% endif %}
@@ -220,27 +220,13 @@ ADMIN_HTML_TEMPLATE = """
 
             <td>
                 {% if o.status == 'Antri' %}
-
-                    <a href="/update_status/{{ o.id }}/Dimasak"
-                       class="btn-status btn-masak">
-                       MASAK
-                    </a>
-
+                    <a href="/update_status/{{ o.id }}/Dimasak" class="btn-status btn-masak">MASAK</a>
                 {% elif o.status == 'Dimasak' %}
-
-                    <a href="/update_status/{{ o.id }}/Selesai"
-                       class="btn-status btn-selesai">
-                       SIAP
-                    </a>
-
+                    <a href="/update_status/{{ o.id }}/Selesai" class="btn-status btn-selesai">SIAP</a>
                 {% else %}
-
-                    <a href="/update_status/{{ o.id }}/Dihapus"
-                       class="btn-status btn-hapus"
-                       onclick="return confirm('Hapus pesanan ini dari layar?')">
-                       HAPUS PESANAN
-                    </a>
-
+                    <button class="btn-status btn-hapus" onclick="hapusBarisBackground({{ o.id }})">
+                        HAPUS PESANAN
+                    </button>
                 {% endif %}
             </td>
 
@@ -251,6 +237,30 @@ ADMIN_HTML_TEMPLATE = """
     </table>
 
     <script>
+        // Fungsi untuk menghapus baris tabel secara instan di background
+        function hapusBarisBackground(idPesanan) {
+            if (confirm('Hapus pesanan ini dari layar?')) {
+                // 1. Langsung hilangkan baris secara visual dari layar monitor admin
+                const elemenBaris = document.getElementById(`row-${idPesanan}`);
+                if (elemenBaris) {
+                    elemenBaris.remove();
+                }
+
+                // 2. Lakukan manipulasi data ke Cloud Database Aiven di background pakai Fetch API
+                fetch(`/update_status/${idPesanan}/Dihapus`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== "success") {
+                            alert("Aduh, gagal memperbarui status di cloud server!");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Fetch Error:", err);
+                    });
+            }
+        }
+
+        // Auto-refresh layar admin berkala tiap 10 detik tetap dipertahankan
         setInterval(function() {
             window.location.reload();
         }, 10000);
@@ -396,9 +406,9 @@ def simpan_pesanan():
         }), 500
 
 
-# =========================
-# UPDATE STATUS PESANAN (Mendukung aksi Sembunyikan/Hapus)
-# =========================
+# ==========================================
+# UPDATE STATUS PESANAN (Mendukung Respon Fleksibel)
+# ==========================================
 @app.route('/update_status/<int:id>/<status>')
 def update_status(id, status):
 
@@ -413,23 +423,25 @@ def update_status(id, status):
         """
 
         cursor.execute(query, (status, id))
-
         conn.commit()
-
         cursor.close()
         conn.close()
 
-        # Menyesuaikan pesan alert jika aksinya hapus pesanan
-        alert_msg = "Pesanan berhasil dihapus dari layar!" if status == 'Dihapus' else f"Status berhasil diupdate menjadi: {status}"
+        # UPDATE: Jika status diubah menjadi 'Dihapus', kirim respon JSON JSON untuk Fetch API
+        if status == 'Dihapus':
+            return jsonify({"status": "success", "message": "Pesanan berhasil disembunyikan"}), 200
 
+        # Jika tombol Masak / Siap diklik, tetap gunakan skrip redirect lama
         return f'''
         <script>
-            alert("{alert_msg}");
+            alert("Status berhasil diupdate menjadi: {status}");
             window.location.href="/admin";
         </script>
         '''
 
     except Exception as e:
+        if status == 'Dihapus':
+            return jsonify({"status": "error", "message": str(e)}), 500
         return f"Gagal update status: {str(e)}"
 
 
