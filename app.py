@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, render_template_string
+from flask import Flask, render_template, request, jsonify, render_template_string, redirect, url_for, session
 from flask_cors import CORS 
 import pymysql # <-- Diubah agar lebih stabil dan menghindari error 2059
 import os
@@ -6,6 +6,13 @@ from urllib.parse import urlparse
 
 app = Flask(__name__)
 CORS(app) 
+
+# --- KUNCI KEAMANAN SESSION (Wajib untuk sistem login) ---
+app.secret_key = 'warung_gelap_super_secret_key_123'
+
+# --- DATA LOGIN ADMIN (Silakan diganti sesuai kesepakatan kelompok) ---
+ADMIN_USERNAME = 'adminwarung'
+ADMIN_PASSWORD = 'akusiteknik1'
 
 # --- KONFIGURASI DATABASE (FLEKSIBEL & AMAN DARI SENSOR GITHUB) ---
 db_url = os.environ.get("DATABASE_URL")
@@ -58,7 +65,7 @@ MENU = {
     ]
 }
 
-# --- TEMPLATE HTML UNTUK ADMIN ---
+# --- TEMPLATE HTML UNTUK ADMIN (Ditambah Auto-Refresh & Tombol Logout) ---
 ADMIN_HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -70,6 +77,25 @@ ADMIN_HTML_TEMPLATE = """
             background: #111; 
             color: #eee; 
             padding: 20px; 
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-logout {
+            background: #e74c3c;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .btn-logout:hover {
+            background: #c0392b;
         }
 
         table { 
@@ -141,7 +167,10 @@ ADMIN_HTML_TEMPLATE = """
 </head>
 <body>
 
-    <h1>Daftar Pesanan Masuk (Dapur)</h1>
+    <div class="header-container">
+        <h1>Daftar Pesanan Masuk (Dapur)</h1>
+        <a href="/logout" class="btn-logout">LOGOUT</a>
+    </div>
 
     <table>
         <tr>
@@ -210,6 +239,12 @@ ADMIN_HTML_TEMPLATE = """
 
     </table>
 
+    <script>
+        setInterval(function() {
+            window.location.reload();
+        }, 10000);
+    </script>
+
 </body>
 </html>
 """
@@ -217,6 +252,31 @@ ADMIN_HTML_TEMPLATE = """
 @app.route('/')
 def index():
     return render_template('index.html', menu=MENU)
+
+# ==========================================
+# ROUTE BARU: LOGIN & LOGOUT ADMIN SYSTEM
+# ==========================================
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin'))
+        else:
+            # Mengirim error jika password salah ke template sederhana
+            error_msg = "Username atau Password Salah!"
+            return render_template_string(LOGIN_HTML_TEMPLATE, error=error_msg)
+            
+    return render_template_string(LOGIN_HTML_TEMPLATE, error=None)
+
+@app.route('/logout')
+def logout():
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('login'))
+
 
 @app.route('/simpan_pesanan', methods=['POST'])
 def simpan_pesanan():
@@ -361,6 +421,9 @@ def update_status(id, status):
 
 @app.route('/admin')
 def admin():
+    # PROTEKSI: Jika admin belum login, alihkan otomatis ke halaman login
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
 
     try:
         conn = pymysql.connect(**db_config)
@@ -402,6 +465,70 @@ def admin():
 
     except Exception as e:
         return f"Gagal memuat database: {str(e)}"
+
+# --- TEMPLATE HTML STRUKTUR HALAMAN LOGIN (TEMA GELAP KHAS WARUNG GELAP) ---
+LOGIN_HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Admin - Warung Gelap</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #f5f5f5;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background: #151515;
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            width: 300px;
+            box-shadow: 0 10px 30px rgba(230, 126, 34, 0.1);
+        }
+        h2 { color: #e67e22; text-align: center; margin-bottom: 30px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #888; }
+        input {
+            width: 100%; padding: 12px; background: #181818; border: 1px solid #333;
+            color: white; border-radius: 10px; box-sizing: border-box;
+        }
+        input:focus { outline: none; border-color: #e67e22; }
+        .btn-login {
+            background: #e67e22; color: white; border: none; padding: 12px;
+            border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;
+        }
+        .btn-login:hover { background: #f39c12; }
+        .error-msg { color: #e74c3c; font-size: 0.85rem; text-align: center; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>ADMIN LOGIN</h2>
+        {% if error %}
+            <div class="error-msg">{{ error }}</div>
+        {% endif %}
+        <form action="/login" method="POST">
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" name="username" required autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit" class="btn-login">MASUK</button>
+        </form>
+    </div>
+</body>
+</html>
+"""
 
 if __name__ == '__main__':
     # Otomatis menyesuaikan port dinamis dari Render/Vercel
