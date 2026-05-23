@@ -65,7 +65,7 @@ MENU = {
     ]
 }
 
-# --- TEMPLATE HTML UNTUK ADMIN (Ditambah Auto-Refresh & Tombol Logout) ---
+# --- TEMPLATE HTML UNTUK ADMIN (Ditambah Tombol Hapus Pesanan) ---
 ADMIN_HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -163,6 +163,15 @@ ADMIN_HTML_TEMPLATE = """
             background: limegreen;
             color: white;
         }
+
+        .btn-hapus {
+            background: #c0392b;
+            color: white;
+        }
+
+        .btn-hapus:hover {
+            background: #e74c3c;
+        }
     </style>
 </head>
 <body>
@@ -226,9 +235,11 @@ ADMIN_HTML_TEMPLATE = """
 
                 {% else %}
 
-                    <span class="status selesai">
-                         SUDAH DIAMBIL
-                    </span>
+                    <a href="/update_status/{{ o.id }}/Dihapus"
+                       class="btn-status btn-hapus"
+                       onclick="return confirm('Hapus pesanan ini dari layar?')">
+                       HAPUS PESANAN
+                    </a>
 
                 {% endif %}
             </td>
@@ -386,7 +397,7 @@ def simpan_pesanan():
 
 
 # =========================
-# UPDATE STATUS PESANAN
+# UPDATE STATUS PESANAN (Mendukung aksi Sembunyikan/Hapus)
 # =========================
 @app.route('/update_status/<int:id>/<status>')
 def update_status(id, status):
@@ -408,9 +419,12 @@ def update_status(id, status):
         cursor.close()
         conn.close()
 
+        # Menyesuaikan pesan alert jika aksinya hapus pesanan
+        alert_msg = "Pesanan berhasil dihapus dari layar!" if status == 'Dihapus' else f"Status berhasil diupdate menjadi: {status}"
+
         return f'''
         <script>
-            alert("Status berhasil diupdate menjadi: {status}");
+            alert("{alert_msg}");
             window.location.href="/admin";
         </script>
         '''
@@ -429,8 +443,10 @@ def admin():
         conn = pymysql.connect(**db_config)
         cursor = conn.cursor()
 
+        # MODIFIKASI: Ditambahkan WHERE status != 'Dihapus' agar pesanan tersembunyi otomatis
         cursor.execute("""
             SELECT * FROM pesanan 
+            WHERE status != 'Dihapus'
             ORDER BY waktu_pesan DESC
         """)
 
